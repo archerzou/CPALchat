@@ -22,7 +22,33 @@ import linkify from "../../utils/linkify.js";
 import { useSessionStorage } from "../../hooks/useSessionStorage";
 import firstLetterCapitalized from "../../utils/stringManimupaltion";
 import extractUsername from "../../utils/usernameExtractor";
-import Spinner from "../animation/spinner"
+import Spinner from "../animation/spinner";
+
+const statusMap = {
+  ChatGPT: {
+    icon: PiGlobeSimpleDuotone,
+    color: "text-purple-500",
+    bgColor: "dark:text-purple-300",
+    text: "ChatGPT",
+  },
+  Google_Search: {
+    icon: PiGoogleLogoDuotone,
+    color: "text-red-500",
+    bgColor: "dark:text-red-300",
+    text: "Google Search",
+  },
+  Document_QA_System: {
+    icon: PiFolderUserDuotone,
+    color: "text-blue-500",
+    bgColor: "dark:text-blue-300",
+    text: "Document Library",
+  },
+  Document_Display: {
+    icon: PiMagnifyingGlassDuotone,
+    color: "text-blue-500",
+    text: "Document Search",
+  },
+};
 
 function ChatController({
   isSendChatLoading,
@@ -44,6 +70,7 @@ function ChatController({
   const [accessToken, setAccessToken] = useSessionStorage("accessToken", "");
   const [firstLetter, setFirstLetter] = useState("");
   const [usernameExtracted, setUsernameExtracted] = useState("");
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -51,169 +78,83 @@ function ChatController({
       setUsernameExtracted(extractUsername(user.email));
       // setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
     }
-  }, []);
+  }, [user]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+  };
 
   const renderBasedOnResponseStatus = (status) => {
-    console.log("renderBasedOnResponseStatus", status);
-    switch (status[0]) {
-      case "ChatGPT":
-        return (
-          <div className="border border-purple-500/75 border-1 flex rounded-lg justify-center items-center max-w-fit">
-            <div className="flex">
-              <PiGlobeSimpleDuotone className="w-6 h-6 mx-4 my-2 text-purple-500" />
+    const { icon: Icon, color, bgColor } = statusMap[status[0]] || {};
+
+    if (Icon) {
+      return (
+        <div
+          className={`border border-${color}/75 border-1 flex rounded-lg justify-center items-center max-w-fit`}
+        >
+          <div className="flex">
+            <Icon className={`w-6 h-6 mx-4 my-2 ${color}`} />
+          </div>
+          <div className="my-2 mr-5">
+            <div className="flex items-center">
+              <div className="text-gray text-xs font-bold flex aligns-center">
+                <span className="mr-2">Browsing...</span>
+              </div>
+              <Spinner
+                className=""
+                size={`w-3 h-3`}
+                tintColor={"fill-black"}
+                bgColor={bgColor}
+              />
             </div>
-            <div className="my-2 mr-5">
-              <div className="flex items-center">
-                <div className="text-gray text-xs font-bold flex aligns-center">
-                  <span className="mr-2">Browsing...</span>
-                </div>
-                <Spinner
-                  className=""
-                  size={`w-3 h-3`}
-                  tintColor={"fill-black"}
-                  bgColor={"dark:text-purple-300"}
-                />
-              </div>
-              <div className="text-gray text-xs font-medium mr-2">
-                {responseStatus[0]}
-              </div>
+            <div className="text-gray text-xs font-medium mr-2">
+              {status[0]}
             </div>
           </div>
-        );
-      case "Google_Search":
-        return (
-          <div className="border border-red-500/75 border-1 flex rounded-lg justify-center items-center max-w-fit">
-            <div className="flex">
-              <PiGoogleLogoDuotone className="w-6 h-6 mx-4 my-2 text-red-500" />
-            </div>
-            <div className="my-2 mr-5">
-              <div className="flex items-center">
-                <div className="text-gray text-xs font-bold flex aligns-center">
-                  <span className="mr-2">Browsing...</span>
-                </div>
-                <Spinner
-                  className=""
-                  size={`w-3 h-3`}
-                  tintColor={"fill-black"}
-                  bgColor={"dark:text-red-300"}
-                />
-              </div>
-              <div className="text-gray text-xs font-medium mr-2">
-                {responseStatus[0]}
-              </div>
-            </div>
-          </div>
-        );
-      case "Document_QA_System":
-        return (
-          <div className="border border-blue-500/75 border-1 flex rounded-lg justify-center items-center max-w-fit">
-            <div className="flex">
-              <PiFolderUserDuotone className="w-6 h-6 mx-4 my-2 text-blue-500" />
-            </div>
-            <div className="my-2 mr-5">
-              <div className="flex items-center">
-                <div className="text-gray text-xs font-bold flex aligns-center">
-                  <span className="mr-2">Browsing...</span>
-                </div>
-                <Spinner
-                  className=""
-                  size={`w-3 h-3`}
-                  tintColor={"fill-black"}
-                  bgColor={"dark:text-blue-300"}
-                />
-              </div>
-              <div className="text-gray text-xs font-medium mr-2">
-                Your documents
-              </div>
-            </div>
-          </div>
-        );
-      default:
-        return (
-          <div className="mt-4">
-            <LoadingDots />
-          </div>
-        );
+        </div>
+      );
     }
+
+    return (
+      <div className="mt-4">
+        <LoadingDots />
+      </div>
+    );
   };
 
   const renderBasedOnSource = (sourceStatus) => {
-    switch (sourceStatus) {
-      case "ChatGPT":
-        return (
-          <div className="flex rounded-lg justify-center items-center max-w-fit bg-white rounded-md">
-            <div className="flex">
-              <PiGlobeSimpleDuotone className="w-6 h-6 mx-4 my-2 text-purple-500" />
-            </div>
-            <div className="my-2 mr-5">
-              <div className="flex items-center">
-                <div className="text-gray text-xs font-bold flex aligns-center">
-                  <span className="mr-2">ChatGPT</span>
-                </div>
+    const { icon: Icon, color, text } = statusMap[sourceStatus] || {};
+
+    if (Icon) {
+      return (
+        <div className="flex rounded-lg justify-center items-center max-w-fit bg-white rounded-md">
+          <div className="flex">
+            <Icon className={`w-6 h-6 mx-4 my-2 ${color}`} />
+          </div>
+          <div className="my-2 mr-5">
+            <div className="flex items-center">
+              <div className="text-gray text-xs font-bold flex aligns-center">
+                <span className="mr-2">{text}</span>
               </div>
             </div>
           </div>
-        );
-      case "Google_Search":
-        return (
-          <div className="flex rounded-lg justify-center items-center max-w-fit bg-white rounded-md">
-            <div className="flex">
-              <PiGoogleLogoDuotone className="w-6 h-6 mx-4 my-2 text-red-500" />
-            </div>
-            <div className="my-2 mr-5">
-              <div className="flex items-center">
-                <div className="text-gray text-xs font-bold flex aligns-center">
-                  <span className="mr-2">Google Search</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      case "Document_QA_System":
-        return (
-          <div className="flex rounded-lg justify-center items-center max-w-fit">
-            <div className="flex">
-              <PiFolderUserDuotone className="w-6 h-6 mx-4 my-2 text-blue-500" />
-            </div>
-            <div className="my-2 mr-5">
-              <div className="flex items-center">
-                <div className="text-gray text-xs font-bold flex aligns-center">
-                  <span className="mr-2">Document Library</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      case "Document_Display":
-        return (
-          <div className="flex rounded-lg justify-center items-center max-w-fit">
-            <div className="flex">
-              <PiMagnifyingGlassDuotone className="w-6 h-6 mx-4 my-2 text-blue-500" />
-            </div>
-            <div className="my-2 mr-5">
-              <div className="flex items-center">
-                <div className="text-gray text-xs font-bold flex aligns-center">
-                  <span className="mr-2">Document Search</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      default:
-        return <></>;
+        </div>
+      );
     }
+
+    return null;
   };
+
   const handleInputChange = (event) => {
     setInputText(event.target.value);
   };
 
   const handleHandleInstruction = (itemText) => () => {
     setInputText(itemText);
-  };
-  const messagesEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
   };
 
   async function getDownloadDocument(id) {
@@ -263,37 +204,9 @@ function ChatController({
     getDownloadDocument(fileId);
   };
 
-  async function getDownloadDocument(id) {
-    if (!id) return;
-
-    console.log("this is download document id" + id);
-    try {
-      const response = await axios.post(
-        `/api/upload/getDownloadDocument`,
-        { selectedId: id },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const url = response.data.url;
-      window.open(url, "_blank");
-
-      if (response.status === 200) {
-        console.log("Document Opened");
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  }
+  // Removed duplicate getDownloadDocument function
 
   async function summarizeDocumentClick(blockId, fileId, index) {
-    console.log("this is blockId", blockId);
-    console.log("this is fileId", fileId);
-
     setSummaryLoading(true);
     setSummaryData("");
 
@@ -303,8 +216,13 @@ function ChatController({
     } else {
       setExpandedBlock({ blockId: blockId, index: index }); // Set the clicked block as the expanded block
 
-      const data = await getSummary(fileId);
-      setSummaryData(data);
+      try {
+        const summary = await getSummary(fileId);
+        setSummaryData(summary);
+      } catch (error) {
+        console.error("Error fetching summary:", error);
+        setSummaryData("Error occurred during summary. Please try again.");
+      }
     }
 
     setSummaryLoading(false);
@@ -333,10 +251,6 @@ function ChatController({
     }
   };
 
-  useEffect(() => {
-    scrollToBottom;
-  }, [messages]);
-
   return (
     <>
       <div className="w-full">
@@ -356,7 +270,7 @@ function ChatController({
               <div className="justify-center">
                 {messages?.map((item, blockId) => {
                   let displayMessage = item.message;
-
+                  // Break down the component into smaller, reusable components for different message types (human and AI) into separate components.
                   return item.sender == "human" ? (
                     <div className="">
                       <div className="m-auto max-w-3xl p-5">
@@ -390,6 +304,7 @@ function ChatController({
                             <div className="text-black-800 truncate  font-bold">
                               CPAL
                             </div>
+                            {/* When using dangerouslySetInnerHTML, ensure that the HTML content is properly sanitized to prevent XSS attacks. */}
                             <div
                               style={{ whiteSpace: "pre-line" }}
                               dangerouslySetInnerHTML={{
@@ -480,14 +395,13 @@ function ChatController({
                                 </div>
 
                                 <div className="flex text-xs items-center">
-                                  {(item.relevant_files &&
-                                    item.relevant_files.length > 0) ||
-                                  (item.relevant_files &&
-                                    item.relevant_files.length > 0) ? (
-                                    <span className="text-sm font-bold mr-2">
-                                      Learn more:
-                                    </span>
-                                  ) : null}
+                                  {/* The condition (item.relevant_files && item.relevant_files.length > 0) is checked twice.  */}
+                                  {item.relevant_files &&
+                                    item.relevant_files.length > 0 && (
+                                      <span className="text-sm font-bold mr-2">
+                                        Learn more:
+                                      </span>
+                                    )}
                                   <div className="flex flex-wrap items-center">
                                     {item.relevant_files &&
                                       item.relevant_files.length > 0 &&
@@ -556,7 +470,7 @@ function ChatController({
             )}
           </div>
         </div>
-        <div className="bottom-0"ref={messagesEndRef} />
+        <div className="bottom-0" ref={messagesEndRef} />
       </div>
     </>
   );

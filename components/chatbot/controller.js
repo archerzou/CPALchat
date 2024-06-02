@@ -7,6 +7,7 @@ import axios from "axios";
 import useChatInfoStore from "../../stores/chatStore.js";
 import { useSessionStorage } from "../../hooks/useSessionStorage.js";
 import { useLocalStorage } from "../../hooks/useLocalStorage.js";
+import { v4 as uuidv4 } from "uuid";
 
 function Controller() {
   const [isSendChatLoading, setIsSendChatLoading] = useState(false);
@@ -58,24 +59,34 @@ function Controller() {
     };
   }, [chatId, savedChatId, isSendChatLoading]);
 
-  const sendMessageClick = async () => {
-    console.log("chekcing: ", isSendChatLoading);
+  // Modify the sendMessageClick function to generate a new chat_id if one doesn't exist:
+  const sendMessageClick = async (e) => {
+    e.preventDefault();
     setIsSendChatLoading(true);
+
     const currentInputText = inputText;
     let chatId = router.query.id;
     setStreamingResponse("");
     setInputText("");
 
     if (!chatId) {
-      console.log("ChatId not found");
-      await setNewChatId();
+      // Generate a new chat_id
+      const newChatId = generateNewChatId();
 
-      chatId = router.query.id;
+      // Update the URL with the new chat_id
+      router.push(`/chatbot/${newChatId}`);
+
+      chatId = newChatId;
     }
 
-    if (chatId) {
-      sendMessageGivenChatId(currentInputText);
-    }
+    sendMessageGivenChatId(currentInputText);
+  };
+
+  // Create a new function called generateNewChatId to generate a unique chat_id
+  const generateNewChatId = () => {
+    // Generate a unique chat_id using a suitable method
+    const newChatId = uuidv4(); // using uuid v4 library
+    return newChatId;
   };
 
   const getSourceStatus = async () => {
@@ -97,9 +108,10 @@ function Controller() {
     }
   };
 
+  // Modify the sendMessageGivenChatId function to handle the case when a new chat_id is generated
   const sendMessageGivenChatId = async (messageText) => {
     let chatId = router.query.id;
-    let clientId = currentClient.uuid
+    let clientId = currentClient.uuid;
     console.log("In progress: sendMessageGivenChatId");
     const sendTime = moment().format("h:mm");
     const myMessage = { sender: "human", message: messageText, time: sendTime };
@@ -159,8 +171,10 @@ function Controller() {
           console.log("this is finalBot Message", finalBotMessage);
           addChatArray(finalBotMessage);
           setIsSendChatLoading(false);
-
           setStreamingResponse("");
+
+          // Update the conversation page with the new chat_id
+          router.push(`/chatbot/${chatId}`);
           return;
         }
 
@@ -347,19 +361,25 @@ function Controller() {
     }
   }
 
+  // Simplified the function by using a try-catch block to handle errors.
   const handleRefresh = async () => {
-    const response = await axios.get("/api/chatbot/getClearChatHistory", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    });
+    try {
+      const response = await axios.get("/api/chatbot/getClearChatHistory", {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("accessToken")}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-    if (response.status === 200) {
-      alert("Successfully clear history");
-      setChatArray([]);
-    } else {
-      alert("failed to clear history");
+      if (response.status === 200) {
+        setChatArray([]);
+        alert("Successfully cleared history");
+      } else {
+        throw new Error("Failed to clear history");
+      }
+    } catch (error) {
+      alert("Failed to clear history");
+      console.error(error);
     }
   };
 
